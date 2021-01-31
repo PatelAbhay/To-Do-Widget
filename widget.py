@@ -5,10 +5,7 @@ import threading
 import sys
 import datetime
 import time
-
-
-task_list = []
-dates = {}
+import sqlite3
 
 
 class Window(threading.Thread):
@@ -19,7 +16,17 @@ class Window(threading.Thread):
     def callback(self):
         sys.exit()
 
+    def syncDatabase(self):
+        while(len(self.task_list) > 0):
+            self.task_list.pop()
+        for row in self.curs.execute('SELECT task, date from tasks'):
+            task.append(row[0])
+            dates[row[0]] = row[1]
+
     def run(self):
+        self.task_list = []
+        self.dates = {}
+
         self.toaster = ToastNotifier()
 
         self.root = tk.Tk()
@@ -52,7 +59,19 @@ class Window(threading.Thread):
         self.delete_all_btn.place(x=30, y=170)
         self.current_tasks.place(x=210, y=10)
 
+        self.db = sqlite3.connect('database.db')
+        self.curs = self.db.cursor()
+        self.curs.execute('''CREATE TABLE IF NOT EXISTS tasks
+             (task, date)''')
+
+        self.syncDatabase()
+        self.updateList()
+        print(self.task_list)
+
         self.root.mainloop()
+
+        self.db.commit()
+        self.cur.close()
 
     def addTask(self):
         name = self.task_name.get()
@@ -63,27 +82,29 @@ class Window(threading.Thread):
             messagebox.showinfo(
                 'Invalid Date', 'Remember to follow the date format provided')
         else:
-            if name in task_list:
+            if name in self.task_list:
                 messagebox.showinfo(
                     'Task Already in List', 'A task with the same name is in the list already')
             else:
-                task_list.append(name)
-                dates[name] = [date, False]
-                self.listUpdate()
+                self.task_list.append(name)
+                self.dates[name] = [date, False]
+                self.curs.execute('INSERT INTO tasks (task, date) VALUES (?,?)', (name,date))
+                self.updateList()
                 self.task_name.delete(0, 'end')
                 self.end_date.delete(0, 'end')
 
     def updateList(self):
         self.current_tasks.delete(0, 'end')
-        for task in task_list:
+        for task in self.task_list:
             self.current_tasks.insert('end', task)
 
     def deleteTask(self):
         try:
             name = self.current_tasks.get(self.current_tasks.curselection())
-            if name in task_list:
-                task_list.remove(name)
-                dates.pop(name)
+            if name in self.task_list:
+                self.task_list.remove(name)
+                self.dates.pop(name)
+                self.curs.execute('DELETE from tasks where task = (?)', (name))
                 self.updateList()
         except:
             messagebox.showinfo('Cannot Delete', 'No Task Item Selected')
@@ -91,15 +112,16 @@ class Window(threading.Thread):
     def deleteAll(self):
         popup = messagebox.askyesno('Delete All', 'Are you sure?')
         if popup == True:
-            while(len(task_list) != 0):
-                task_list.pop()
-                dates.pop()
+            while(len(self.task_list) != 0):
+                self.task_list.pop()
+                self.dates.pop()
+            self.curs.execute('DELETE from tasks')
             self.updateList()
 
     def sendNotification(self, task_name):
         self.toaster.show_toast(
             "Task Due Today!", task_name + " is due today!")
-        dates[task_name][1] = True
+        self.dates[task_name][1] = True
 
 
 window = Window()
@@ -107,9 +129,9 @@ window = Window()
 while True:
     today = str(datetime.date.today())
 
-    for key in dates:
-        print(dates[key])
-        if today == dates[key][0] and not dates[key][1]:
+    for key in window.dates:
+        print(window.dates[key])
+        if today == window.dates[key][0] and not window.dates[key][1]:
             window.sendNotification(key)
             time.sleep(3)
 
