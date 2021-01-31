@@ -16,10 +16,10 @@ pip install win10toast
 ## Usage
 
 To use the widget, simply download the **widget.py** file. Then open your command prompt/powershell
-and traverse to the file location of **widget.py**. The run using the following command in your terminal
+and traverse to the file location of **widget.py**. Then run using the following command in your terminal
 
 ```python
-pythonw.exe widget.py
+path/to/file> pythonw.exe widget.py
 ```
 
 ## License
