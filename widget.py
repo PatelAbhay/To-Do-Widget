@@ -23,7 +23,6 @@ class Window(threading.Thread):
         self.curs.execute('SELECT * FROM tasks')
         rows = self.curs.fetchall()
         for row in rows:
-            print(row)
             self.task_list.append(row[0])
             self.dates[row[0]] = row[1]
 
