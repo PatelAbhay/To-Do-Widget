@@ -19,7 +19,7 @@ To use the widget, simply download the **widget.py** file. Then open your comman
 and traverse to the file location of **widget.py**. Then run using the following command in your terminal
 
 ```python
-path/to/file> pythonw.exe widget.py
+pythonw.exe widget.py
 ```
 
 ## License
