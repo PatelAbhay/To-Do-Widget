@@ -19,9 +19,13 @@ class Window(threading.Thread):
     def syncDatabase(self):
         while(len(self.task_list) > 0):
             self.task_list.pop()
-        for row in self.curs.execute('SELECT task, date from tasks'):
-            task.append(row[0])
-            dates[row[0]] = row[1]
+        
+        self.curs.execute('SELECT * FROM tasks')
+        rows = self.curs.fetchall()
+        for row in rows:
+            print(row)
+            self.task_list.append(row[0])
+            self.dates[row[0]] = row[1]
 
     def run(self):
         self.task_list = []
@@ -62,7 +66,7 @@ class Window(threading.Thread):
         self.db = sqlite3.connect('database.db')
         self.curs = self.db.cursor()
         self.curs.execute('''CREATE TABLE IF NOT EXISTS tasks
-             (task, date)''')
+             (name, date)''')
 
         self.syncDatabase()
         self.updateList()
@@ -89,7 +93,9 @@ class Window(threading.Thread):
                 self.task_list.append(name)
                 self.dates[name] = [date, False]
                 self.curs.execute('INSERT INTO tasks (task, date) VALUES (?,?)', (name,date))
+                self.db.commit()
                 self.updateList()
+                print(self.task_list)
                 self.task_name.delete(0, 'end')
                 self.end_date.delete(0, 'end')
 
@@ -105,6 +111,7 @@ class Window(threading.Thread):
                 self.task_list.remove(name)
                 self.dates.pop(name)
                 self.curs.execute('DELETE from tasks where task = (?)', (name))
+                self.db.commit()
                 self.updateList()
         except:
             messagebox.showinfo('Cannot Delete', 'No Task Item Selected')
@@ -116,6 +123,7 @@ class Window(threading.Thread):
                 self.task_list.pop()
                 self.dates.pop()
             self.curs.execute('DELETE from tasks')
+            self.db.commit()
             self.updateList()
 
     def sendNotification(self, task_name):
